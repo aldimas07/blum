@@ -8,8 +8,6 @@ import time
 import datetime
 from colorama import init, Fore, Style
 init(autoreset=True)
-
-
 bot_token = ""
 chat_id = ""
 
@@ -29,8 +27,6 @@ def send_telegram_message(bot_token, chat_id, message):
     except Exception as e:
         print(f"{Fore.RED+Style.BRIGHT}Error sending notification: {str(e)}")
 
-
-
 total_balance_all_accounts = 0  # Initialize total balance variable
 start_time = datetime.datetime.now()  # Tentukan waktu mulai saat bot dijalankan
 
@@ -40,23 +36,16 @@ def parse_arguments():
     parser.add_argument('--reff', type=str, choices=['y', 'n'], help='Apakah ingin claim ref? (y/n, default n)')
     parser.add_argument('--notify', type=str, choices=['y', 'n'], help='Apakah ingin mengirim notifikasi ke Telegram? (y/n, default n)')
     args = parser.parse_args()
-
     if args.task is None:
-        # Jika parameter --task tidak diberikan, minta input dari pengguna
         task_input = input("Apakah Anda ingin cek dan claim task? (y/n, default n): ").strip().lower()
-        # Jika pengguna hanya menekan enter, gunakan 'n' sebagai default
         args.task = task_input if task_input in ['y', 'n'] else 'n'
 
     if args.reff is None:
-        # Jika parameter --claim_ref tidak diberikan, minta input dari pengguna
         reff_input = input("Apakah ingin claim ref? (y/n, default n): ").strip().lower()
-        # Jika pengguna hanya menekan enter, gunakan 'n' sebagai default
         args.reff = reff_input if reff_input in ['y', 'n'] else 'n'
 
     if args.notify is None:
-        # Jika parameter --notify tidak diberikan, minta input dari pengguna
         notify_input = input("Apakah ingin mengirim notifikasi ke Telegram? (y/n, default n): ").strip().lower()
-        # Jika pengguna hanya menekan enter, gunakan 'n' sebagai default
         args.notify = notify_input if notify_input in ['y', 'n'] else 'n'
 
     return args
@@ -73,8 +62,7 @@ while True:
         tribe_id = "0999c4b7-1bbd-4825-a7a0-afc1bfb3fff6"
         break
     else:
-        print(Fore.RED + Style.BRIGHT + "Invalid selection. Please select again.")
-    
+        print(Fore.RED + Style.BRIGHT + "Invalid selection. Please select again.")   
 
 def check_tasks(token):
     headers = {
@@ -92,7 +80,6 @@ def check_tasks(token):
         'sec-fetch-site': 'same-site',
         'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0'
     }
-
     try:
         response = requests.get('https://game-domain.blum.codes/api/v1/tasks', headers=headers)
         if response.status_code == 200:
@@ -117,7 +104,6 @@ def check_tasks(token):
                                 print(f"{Fore.YELLOW+Style.BRIGHT}Starting Task: {task_title}", end="\r", flush=True)
                                 start_task(token, lists['id'], task_title)
                                 claim_task(token, lists['id'], task_title)
-                        # Check for subtasks
                         subTasks = lists.get('subTasks', [])
                         for subtask in subTasks:
                             subtask_status = subtask.get('status', None)
@@ -214,7 +200,6 @@ def claim_subtask(token, subtask_id, title):
         print(f"{Fore.RED+Style.BRIGHT}Failed to claim subtask {title} due to error: {str(e)}")
 
 def claim_task(token, task_id,titlenya):
-    # print(f"{Fore.YELLOW+Style.BRIGHT}\nClaiming task {titlenya}")
     url = f'https://game-domain.blum.codes/api/v1/tasks/{task_id}/claim'
     headers = {
         'Authorization': f'Bearer {token}',
@@ -239,11 +224,12 @@ def claim_task(token, task_id,titlenya):
             print(f"{Fore.RED+Style.BRIGHT}Failed to claim task {titlenya}")
     except:
         print(f"{Fore.RED+Style.BRIGHT}Failed to claim task {titlenya} {response.status_code} ")
-
         
+import json
+import requests
+from colorama import Fore, Style
+
 def get_new_token(query_id):
-    import json
-    # Header untuk permintaan HTTP
     headers = {
         "accept": "application/json, text/plain, */*",
         "accept-language": "en-US,en;q=0.9",
@@ -252,30 +238,36 @@ def get_new_token(query_id):
         "priority": "u=1, i",
         "referer": "https://telegram.blum.codes/"
     }
-
-    # Data yang akan dikirim dalam permintaan POST
     data = json.dumps({"query": query_id})
-
-    # URL endpoint
     url = "https://user-domain.blum.codes/api/v1/auth/provider/PROVIDER_TELEGRAM_MINI_APP"
-
-    # Mencoba mendapatkan token hingga 3 kali
+    
     for attempt in range(5):
-        print(f"\r{Fore.YELLOW+Style.BRIGHT}Mendapatkan token...", end="", flush=True)
-        response = requests.post(url, headers=headers, data=data)
-        if response.status_code == 200:
-            # print(f"\r{Fore.GREEN+Style.BRIGHT}Token berhasil dibuat", end="", flush=True)
-            response_json = response.json()
-            return response_json['token']['refresh']
-        else:
-            print(response.json())
-            print(f"\r{Fore.RED+Style.BRIGHT}Gagal mendapatkan token, percobaan {attempt + 1}", flush=True)
-    # Jika semua percobaan gagal
+        print(f"\r{Fore.YELLOW+Style.BRIGHT}Mendapatkan token... (Percobaan {attempt + 1})", end="", flush=True)
+        try:
+            response = requests.post(url, headers=headers, data=data)
+            print(f"\nStatus code: {response.status_code}")
+            print(f"Response content: {response.text[:100]}...")  # Print the first 100 characters of the response
+            
+            if response.status_code == 200:
+                try:
+                    response_json = response.json()
+                    return response_json['token']['refresh']
+                except json.JSONDecodeError as e:
+                    print(f"\r{Fore.RED+Style.BRIGHT}Error decoding JSON: {e}", flush=True)
+                except KeyError as e:
+                    print(f"\r{Fore.RED+Style.BRIGHT}KeyError: {e}. Response struktur tidak sesuai yang diharapkan.", flush=True)
+            else:
+                print(f"\r{Fore.RED+Style.BRIGHT}Gagal mendapatkan token. Status code: {response.status_code}", flush=True)
+        
+        except requests.RequestException as e:
+            print(f"\r{Fore.RED+Style.BRIGHT}Error saat melakukan request: {e}", flush=True)
+        
+        print(f"\r{Fore.YELLOW+Style.BRIGHT}Menunggu sebelum percobaan berikutnya...", flush=True)
+        time.sleep(5)  # Tunggu 5 detik sebelum mencoba lagi
 
     print(f"\r{Fore.RED+Style.BRIGHT}Gagal mendapatkan token setelah 5 percobaan.", flush=True)
     return None
 
-# Fungsi untuk mendapatkan informasi pengguna
 def get_user_info(token):
 
     headers = {
@@ -285,14 +277,13 @@ def get_user_info(token):
         'origin': 'https://telegram.blum.codes',
         'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0'
     }
-    response = requests.get('https://gateway.blum.codes/v1/user/me', headers=headers)
+    response = requests.get('https://user-domain.blum.codes/api/v1/user/me', headers=headers)
     if response.status_code == 200:
         return response.json()
     else:
         hasil = response.json()
         if hasil['message'] == 'Token is invalid':
             print(f"{Fore.RED+Style.BRIGHT}Token salah, mendapatkan token baru...")
-            # Mendapatkan token baru
             new_token = get_new_token()
             if new_token:
                 print(f"{Fore.GREEN+Style.BRIGHT}Token baru diperoleh, mencoba lagi...")
@@ -304,7 +295,6 @@ def get_user_info(token):
             print(f"{Fore.RED+Style.BRIGHT}Gagal mendapatkan informasi user")
             return None
 
-# Fungsi untuk mendapatkan saldo
 def get_balance(token):
     headers = {
         'Authorization': f'Bearer {token}',
@@ -316,9 +306,7 @@ def get_balance(token):
     for attempt in range(3):
         try:
             response = requests.get('https://game-domain.blum.codes/api/v1/user/balance', headers=headers)
-            # print(response.json())
             if response.status_code == 200:
-                # print(f"{Fore.GREEN+Style.BRIGHT}Berhasil mendapatkan saldo")
                 return response.json()
             else:
                 print(f"\r{Fore.RED+Style.BRIGHT}Gagal mendapatkan saldo, percobaan {attempt + 1}", flush=True)
@@ -331,7 +319,6 @@ def get_balance(token):
     print(f"\r{Fore.RED+Style.BRIGHT}Gagal mendapatkan saldo setelah 3 percobaan.", flush=True)
     return None
 
-# Fungsi untuk memainkan game
 def play_game(token):
     headers = {
         'Authorization': f'Bearer {token}',
@@ -361,7 +348,6 @@ def claim_game(token, game_id, points):
     headers["priority"] = "u=1, i"
     headers["user-agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0"
     data = '{"gameId":"'+game_id+'","points":'+str(points)+'}'
-
     try:
         resp = requests.post(url, headers=headers, data=data)
         return resp
@@ -481,7 +467,6 @@ def claim_balance_friend(token):
         print(f"{Fore.RED+Style.BRIGHT}Gagal mengklaim saldo teman karena error: {e}")
     return None
 
-# cek daily 
 import json
 def check_daily_reward(token):
     headers = {
@@ -506,7 +491,6 @@ def check_daily_reward(token):
             except json.JSONDecodeError:
                 if response.text == "OK":
                     return response.text
-                # print(f"{Fore.RED+Style.BRIGHT}Json Error: {response.text}")
                 return None
         else:
             try:
@@ -514,7 +498,6 @@ def check_daily_reward(token):
             except json.JSONDecodeError:
                 print(f"{Fore.RED+Style.BRIGHT}Json Error: {response.text}")
                 return None
-            # response.raise_for_status()  # Menangani status kode HTTP yang tidak sukses
             return None
     except requests.exceptions.Timeout:
         print(f"\r{Fore.RED+Style.BRIGHT}Gagal claim daily: Timeout")
@@ -522,7 +505,6 @@ def check_daily_reward(token):
         return response.json()
       
     return None
-
 
 def check_tribe(token):
     url = 'https://game-domain.blum.codes/api/v1/tribe/my'
@@ -542,8 +524,6 @@ def check_tribe(token):
         print(f"{Fore.RED+Style.BRIGHT}Gagal mendapatkan informasi tribe")
         return None
     
-
-
 def join_tribe(token, tribe_id):
     url = f'https://game-domain.blum.codes/api/v1/tribe/{tribe_id}/join'
     headers = {
@@ -560,7 +540,6 @@ def join_tribe(token, tribe_id):
     else:
         print(f"{Fore.RED+Style.BRIGHT}[ Tribe ] Failed to join TRIBE")
 
-
 def print_welcome_message():
     print(r"""
           
@@ -576,10 +555,8 @@ def print_welcome_message():
     hours, remainder = divmod(remainder, 3600)
     minutes, seconds = divmod(remainder, 60)
     print(Fore.CYAN + Style.BRIGHT + f"Up time bot: {int(days)} hari, {int(hours)} jam, {int(minutes)} menit, {int(seconds)} detik")
-
     
 checked_tasks = {}
-
 args = parse_arguments()
 cek_task_enable = args.task
 claim_ref_enable = args.reff
@@ -589,8 +566,6 @@ with open('tgwebapp.txt', 'r') as file:
 while True:
     try:
         print_welcome_message()
-        
-
         for index, query_id in enumerate(query_ids, start=1):
             token = get_new_token(query_id)  # Mendapatkan token baru
             user_info = get_user_info(token)
@@ -600,20 +575,15 @@ while True:
             print(f"\r{Fore.YELLOW+Style.BRIGHT}Getting Info....", end="", flush=True)
             balance_info = get_balance(token)
             time.sleep(1)
-            # print(balance_info)
-            # print(balance_info)
             if balance_info is None:
                 print(f"\r{Fore.RED+Style.BRIGHT}Gagal mendapatkan informasi balance", flush=True)
                 continue
             else:
                 available_balance_before = balance_info['availableBalance']  # asumsikan ini mengambil nilai dari JSON
- 
                 balance_before = f"{float(available_balance_before):,.0f}".replace(",", ".")
                 total_balance_all_accounts += float(available_balance_before)  # Use the original float value
                 print(f"\r{Fore.YELLOW+Style.BRIGHT}[ Balance ]: {balance_before}", flush=True)
- 
                 tribe_info = check_tribe(token)
-                
                 print(f"\r{Fore.GREEN+Style.BRIGHT}[ Tribe ]: Checking tribe...", end="", flush=True)
                 time.sleep(1)
                 if tribe_info and tribe_info.get("message") == "NOT_FOUND":
@@ -627,7 +597,6 @@ while True:
                 else:
                     print(f"\r{Fore.RED+Style.BRIGHT}[ Tribe ]: Gagal mendapatkan informasi tribe", flush=True)
                 print(f"{Fore.MAGENTA+Style.BRIGHT}[ Tiket Game ]: {balance_info['playPasses']}")
-                # Periksa apakah 'farming' ada dalam balance_info sebelum mengaksesnya
                 farming_info = balance_info.get('farming')
                 time.sleep(1)
                 if farming_info:
@@ -670,11 +639,9 @@ while True:
                             print(f"\r{Fore.RED+Style.BRIGHT}[ Claim Balance ] : Gagal start farming", start_response.status_code, flush=True)
                     else:
                         print(f"\r{Fore.RED+Style.BRIGHT}[ Claim Balance ] : Gagal claim", claim_response.status_code, flush=True)
-
-            # cek daily 
+            # cek daily reward
             print(f"\r{Fore.CYAN+Style.BRIGHT}[ Daily Reward ] : Checking daily reward...", end="", flush=True)
             daily_reward_response = check_daily_reward(token)
-            # print(daily_reward_response)
             if daily_reward_response is None:
                 print(f"\r{Fore.RED+Style.BRIGHT}[ Daily Reward ] : Gagal cek hadiah harian", flush=True)
             else:
@@ -684,15 +651,12 @@ while True:
                     print(f"\r{Fore.CYAN+Style.BRIGHT}[ Daily Reward ] : Hadiah harian berhasil diklaim!", flush=True)
                 else:
                     print(f"\r{Fore.RED+Style.BRIGHT}[ Daily Reward ] : Gagal cek hadiah harian. {daily_reward_response}", flush=True)
-            # print(daily_reward_response)
-            # cek task 
             if cek_task_enable == 'y':
                 if query_id not in checked_tasks or not checked_tasks[query_id]:
                     print(f"\r{Fore.YELLOW+Style.BRIGHT}Checking tasks...\n", end="", flush=True)
                     check_tasks(token)
                     checked_tasks[query_id] = True
-
-            
+           
             print(f"\r{Fore.YELLOW+Style.BRIGHT}[ Reff Balance ] : Checking reff balance...", end="", flush=True)
             if claim_ref_enable == 'y':
                 friend_balance = check_balance_friend(token)
@@ -707,7 +671,6 @@ while True:
                         else:
                             print(f"\r{Fore.RED+Style.BRIGHT}[ Reff Balance ] : Gagal mengklaim saldo ref", flush=True)
                     else:
-                        # Periksa apakah 'canClaimAt' ada sebelum mengaksesnya
                         can_claim_at = friend_balance.get('canClaimAt')
                         if can_claim_at:
                             claim_time = datetime.datetime.fromtimestamp(int(can_claim_at) / 1000)
@@ -737,7 +700,6 @@ while True:
                 if game_response is None or 'gameId' not in game_response:
                     print(f"\r{Fore.RED+Style.BRIGHT}[ Play Game ] : Gagal memainkan game setelah 5 percobaan", flush=True)
                     break
-                # print(f"\r{Fore.GREEN+Style.BRIGHT}[ Play Game ] : Game Response: {game_response}", flush=True)
                 time.sleep(10)
                 claim_response = claim_game(token, game_response.get('gameId'), random.randint(256, 278))
                 while True:
@@ -762,7 +724,6 @@ while True:
                     else:
                         print(f"\r{Fore.YELLOW+Style.BRIGHT}[ Play Game ] : Game selesai: {claim_response.text}", flush=True)
                         break
-                # Setelah klaim game, cek lagi jumlah tiket
                 balance_info = get_balance(token) 
                 if balance_info is None: # Refresh informasi saldo untuk mendapatkan tiket terbaru
                     print(f"\r{Fore.RED+Style.BRIGHT}[ Play Game ] Gagal mendapatkan informasi tiket", flush=True)
@@ -770,7 +731,6 @@ while True:
                     available_balance_after = balance_info['availableBalance']  # asumsikan ini mengambil nilai dari JSON
                     before = float(available_balance_before) 
                     after =  float(available_balance_after)
-                    # balance_after = f"{float(available_balance):,.0f}".replace(",", ".")
                     total_balance = after - before  # asumsikan ini mengambil
                     print(f"\r{Fore.YELLOW+Style.BRIGHT}[ Play Game ]: You Got Total {total_balance} From Playing Game", flush=True)
                     if balance_info['playPasses'] > 0:
@@ -779,13 +739,11 @@ while True:
                     else:
                         print(f"\r{Fore.RED+Style.BRIGHT}[ Play Game ] : Tidak ada tiket tersisa.", flush=True)
                         break
-
  
         print(f"\n{Fore.GREEN+Style.BRIGHT}Total Balance from all accounts: {total_balance_all_accounts:,.0f}".replace(",", "."))  # Print total balance
         print(f"\n{Fore.GREEN+Style.BRIGHT}========={Fore.WHITE+Style.BRIGHT}Semua akun berhasil di proses{Fore.GREEN+Style.BRIGHT}=========", end="", flush=True)
         if notif_tele_enable == 'y':
             total_accounts = len(query_ids)
-    
             message = f"""          
                     🍀 <b>BLUM Report</b>
 
@@ -809,7 +767,5 @@ while True:
     except KeyboardInterrupt:
         print(f"\n{Fore.RED+Style.BRIGHT}Proses dihentikan paksa oleh anda!")
         break
- 
     except Exception as e:
             print(f"An error occurred: {str(e)}")
-
